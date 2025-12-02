@@ -69,24 +69,18 @@
     }
   }
 
-  function aplicarFiltro() {
-    const q = buscar.value.toLowerCase();
-    const filtrado = dataLibros.filter(l =>
-      (l.titulo || '').toLowerCase().includes(q) ||
-      (l.autor || '').toLowerCase().includes(q)
-    );
-    renderFilas(filtrado);
-  }
+  let t;
 
-  async function cargarLibros() {
+  async function cargarLibros(q) {
     limpiarAlert();
     const token = localStorage.getItem('access');
     if (!token) {
-      setAlert('warning', 'Falta token. Inicia sesión en /api/paginas/login/.');
+      setAlert('warning', 'Falta token. Obtén un token en /api/token/ (via Postman) y guárdalo en localStorage como "access".');
       return;
     }
     try {
-      const resp = await fetch('/api/libros/', {
+      const url = q ? `/api/libros/?q=${encodeURIComponent(q)}` : '/api/libros/';
+      const resp = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resp.status === 401) {
@@ -104,8 +98,11 @@
     }
   }
 
-  buscar.addEventListener('input', aplicarFiltro);
-  btnRecargar.addEventListener('click', cargarLibros);
-  document.addEventListener('DOMContentLoaded', cargarLibros);
+  buscar.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => cargarLibros(buscar.value), 250);
+  });
+  btnRecargar.addEventListener('click', () => cargarLibros(buscar.value));
+  document.addEventListener('DOMContentLoaded', () => cargarLibros());
 </script>
 {% endblock %}

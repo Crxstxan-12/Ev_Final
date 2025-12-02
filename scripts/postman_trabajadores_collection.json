@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Trabajadores · Página + API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "username", "value": "" },
+    { "key": "password", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "trabajadorId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/token/", "host": ["{{baseUrl}}"], "path": ["api", "token", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const data = pm.response.json();",
+              "pm.environment.set('accessToken', data.access);",
+              "pm.environment.set('refreshToken', data.refresh);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/token/refresh/", "host": ["{{baseUrl}}"], "path": ["api", "token", "refresh", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const data = pm.response.json();",
+              "pm.environment.set('accessToken', data.access);"
+            ] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Página Trabajadores (HTML)",
+      "item": [
+        {
+          "name": "GET página",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/paginas/trabajadores/", "host": ["{{baseUrl}}"], "path": ["api", "paginas", "trabajadores", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trabajadores API",
+      "event": [
+        { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+          "const tok = pm.environment.get('accessToken');",
+          "if (tok) { pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + tok }); }"
+        ] } }
+      ],
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/trabajadores/", "host": ["{{baseUrl}}"], "path": ["api", "trabajadores", ""] }
+          }
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/trabajadores/", "host": ["{{baseUrl}}"], "path": ["api", "trabajadores", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"correo\": \"juan.perez@example.com\",\n  \"cargo\": \"Operario\",\n  \"fecha_contratacion\": \"2024-01-15\",\n  \"activo\": true\n}" }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const data = pm.response.json();",
+            "pm.environment.set('trabajadorId', data.id);"
+          ] } } ]
+        },
+        {
+          "name": "Detalle",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/trabajadores/{{trabajadorId}}/", "host": ["{{baseUrl}}"], "path": ["api", "trabajadores", "{{trabajadorId}}", ""] }
+          }
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/trabajadores/{{trabajadorId}}/", "host": ["{{baseUrl}}"], "path": ["api", "trabajadores", "{{trabajadorId}}", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"correo\": \"juan.perez@example.com\",\n  \"cargo\": \"Supervisor\",\n  \"fecha_contratacion\": \"2024-01-15\",\n  \"activo\": true\n}" }
+          }
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+            "url": { "raw": "{{baseUrl}}/api/trabajadores/{{trabajadorId}}/", "host": ["{{baseUrl}}"], "path": ["api", "trabajadores", "{{trabajadorId}}", ""] }
+          }
+        }
+      ]
+    }
+  ]
+}

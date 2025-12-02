@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
 from .models import Libro, Trabajador
 from .serializers import LibroSerializer, TrabajadorSerializer
 
@@ -11,8 +12,11 @@ from .serializers import LibroSerializer, TrabajadorSerializer
 @permission_classes([IsAuthenticated])
 def lista_libros(request):
     if request.method == 'GET':
-        libros = Libro.objects.all()
-        serializer = LibroSerializer(libros, many=True)
+        q = request.GET.get('q', '').strip()
+        qs = Libro.objects.all()
+        if q:
+            qs = qs.filter(Q(titulo__icontains=q) | Q(autor__icontains=q))
+        serializer = LibroSerializer(qs, many=True)
         return Response(serializer.data)
     if request.method == 'POST':
         serializer = LibroSerializer(data=request.data)
@@ -87,18 +91,5 @@ def pagina_libro_detalle(request, pk):
     libro = get_object_or_404(Libro, pk=pk)
     return render(request, 'modelApp/libro_detail.html', {'libro': libro})
 
-def pagina_login(request):
-    return render(request, 'modelApp/auth_login.html')
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def registrar_usuario(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    email = request.data.get('email')
-    if not username or not password:
-        return Response({'detail': 'username y password son requeridos'}, status=status.HTTP_400_BAD_REQUEST)
-    if User.objects.filter(username=username).exists():
-        return Response({'detail': 'Usuario ya existe'}, status=status.HTTP_400_BAD_REQUEST)
-    user = User.objects.create_user(username=username, password=password, email=email or '')
-    return Response({'id': user.id, 'username': user.username, 'email': user.email}, status=status.HTTP_201_CREATED)
+def pagina_trabajadores(request):
+    return render(request, 'modelApp/trabajadores_list.html')

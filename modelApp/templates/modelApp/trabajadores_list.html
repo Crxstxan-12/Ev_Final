@@ -1,0 +1,93 @@
+{% extends "modelApp/base.htm" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">Listado de Trabajadores</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" id="btn-recargar">Recargar</button>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <input type="text" class="form-control" id="busqueda" placeholder="Buscar por nombre o correo">
+    </div>
+  </div>
+
+  <div id="alerta" class="alert d-none" role="alert"></div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Correo</th>
+          <th>Cargo</th>
+          <th>Fecha contratación</th>
+          <th>Activo</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-trabajadores"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const alerta = document.getElementById('alerta');
+  const tbody = document.getElementById('tbody-trabajadores');
+  const buscar = document.getElementById('busqueda');
+  const btnRecargar = document.getElementById('btn-recargar');
+  let dataItems = [];
+
+  function setAlert(tipo, texto) {
+    alerta.className = `alert alert-${tipo}`;
+    alerta.textContent = texto;
+    alerta.classList.remove('d-none');
+  }
+
+  function limpiarAlert() {
+    alerta.className = 'alert d-none';
+    alerta.textContent = '';
+  }
+
+  function renderFilas(lista) {
+    tbody.innerHTML = '';
+    for (const t of lista) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${t.nombre ?? ''}</td>
+        <td>${t.apellido ?? ''}</td>
+        <td>${t.correo ?? ''}</td>
+        <td>${t.cargo ?? ''}</td>
+        <td>${t.fecha_contratacion ?? ''}</td>
+        <td>${t.activo ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>'}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  let t;
+  async function cargar(q) {
+    limpiarAlert();
+    const token = localStorage.getItem('access');
+    if (!token) {
+      setAlert('warning', 'Falta token. Obtén un token en /api/token/ (via Postman) y guárdalo en localStorage como "access".');
+      return;
+    }
+    try {
+      const url = '/api/trabajadores/';
+      const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (resp.status === 401) { setAlert('danger', 'Token inválido o expirado.'); return; }
+      if (!resp.ok) { setAlert('danger', 'Error al cargar trabajadores.'); return; }
+      dataItems = await resp.json();
+      const ql = (q || '').toLowerCase();
+      const filtrado = ql ? dataItems.filter(x => (x.nombre||'').toLowerCase().includes(ql) || (x.correo||'').toLowerCase().includes(ql)) : dataItems;
+      renderFilas(filtrado);
+    } catch { setAlert('danger', 'Error de red.'); }
+  }
+
+  buscar.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => cargar(buscar.value), 250); });
+  btnRecargar.addEventListener('click', () => cargar(buscar.value));
+  document.addEventListener('DOMContentLoaded', () => cargar());
+</script>
+{% endblock %}
