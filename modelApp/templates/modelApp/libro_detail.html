@@ -1,0 +1,40 @@
+{% extends "modelApp/base.htm" %}
+{% block content %}
+  <div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Detalle de Libro</h5>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-3">Título</dt>
+            <dd class="col-sm-9">{{ libro.titulo|default:"-" }}</dd>
+            <dt class="col-sm-3">Autor</dt>
+            <dd class="col-sm-9">{{ libro.autor|default:"-" }}</dd>
+            <dt class="col-sm-3">Año</dt>
+            <dd class="col-sm-9">{{ libro.anio_publicacion|default:"-" }}</dd>
+            <dt class="col-sm-3">Categoría</dt>
+            <dd class="col-sm-9">{{ libro.categoria|default:"-" }}</dd>
+            <dt class="col-sm-3">Disponible</dt>
+            <dd class="col-sm-9">
+              {% if libro.disponible %}
+                <span class="badge bg-success">Sí</span>
+              {% else %}
+                <span class="badge bg-danger">No</span>
+              {% endif %}
+            </dd>
+          </dl>
+        </div>
+        <div class="card-footer bg-light">
+          <div class="d-flex gap-2">
+            <a href="/api/paginas/libros/" class="btn btn-outline-secondary">Volver</a>
+            <a href="/api/paginas/libros/{{ libro.id|default:pk }}/" class="btn btn-outline-primary">Recargar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

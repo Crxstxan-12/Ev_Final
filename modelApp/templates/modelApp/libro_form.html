@@ -1,0 +1,91 @@
+{% extends "modelApp/base.htm" %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Ingreso de Libro</h5>
+        </div>
+        <div class="card-body">
+          <form id="form-libro" class="needs-validation" novalidate>
+            <div class="mb-3">
+              <label class="form-label">Título</label>
+              <input type="text" class="form-control" name="titulo" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Autor</label>
+              <input type="text" class="form-control" name="autor" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Año de publicación</label>
+              <input type="number" class="form-control" name="anio_publicacion" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Categoría</label>
+              <input type="text" class="form-control" name="categoria" required>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="disponible" id="chkDisponible" checked>
+              <label class="form-check-label" for="chkDisponible">Disponible</label>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Token de acceso</label>
+              <input type="text" class="form-control" id="token" placeholder="Bearer token">
+              <div class="form-text">Pega tu token JWT. Si está en localStorage, se carga automáticamente.</div>
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">Guardar</button>
+              <a href="/api/paginas/libros/" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+          <div id="alerta" class="alert mt-3 d-none" role="alert"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const tokenInput = document.getElementById('token');
+  const saved = localStorage.getItem('access');
+  if (saved && !tokenInput.value) tokenInput.value = saved;
+
+  const form = document.getElementById('form-libro');
+  const alerta = document.getElementById('alerta');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    data.disponible = document.getElementById('chkDisponible').checked;
+    const token = tokenInput.value?.trim();
+    if (!token) {
+      alerta.className = 'alert alert-warning';
+      alerta.textContent = 'Debes ingresar el token de acceso.';
+      return;
+    }
+    try {
+      const resp = await fetch('/api/libros/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        alerta.className = 'alert alert-danger';
+        alerta.textContent = err.detail || 'Error al guardar.';
+        return;
+      }
+      const json = await resp.json();
+      alerta.className = 'alert alert-success';
+      alerta.textContent = 'Libro creado correctamente.';
+      setTimeout(() => { window.location.href = `/api/paginas/libros/${json.id}/`; }, 700);
+    } catch (err) {
+      alerta.className = 'alert alert-danger';
+      alerta.textContent = 'Error de red.';
+    }
+  });
+</script>
+{% endblock %}

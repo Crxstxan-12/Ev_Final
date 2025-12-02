@@ -1,0 +1,111 @@
+{% extends "modelApp/base.htm" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">Listado de Libros</h2>
+    <div class="d-flex gap-2">
+      <a href="/api/paginas/libros/nuevo/" class="btn btn-primary">Nuevo</a>
+      <button class="btn btn-outline-secondary" id="btn-recargar">Recargar</button>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <input type="text" class="form-control" id="busqueda" placeholder="Buscar por título o autor">
+    </div>
+  </div>
+
+  <div id="alerta" class="alert d-none" role="alert"></div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead class="table-dark">
+        <tr>
+          <th>Título</th>
+          <th>Autor</th>
+          <th>Año</th>
+          <th>Categoría</th>
+          <th>Disponible</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-libros"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const alerta = document.getElementById('alerta');
+  const tbody = document.getElementById('tbody-libros');
+  const buscar = document.getElementById('busqueda');
+  const btnRecargar = document.getElementById('btn-recargar');
+  let dataLibros = [];
+
+  function setAlert(tipo, texto) {
+    alerta.className = `alert alert-${tipo}`;
+    alerta.textContent = texto;
+    alerta.classList.remove('d-none');
+  }
+
+  function limpiarAlert() {
+    alerta.className = 'alert d-none';
+    alerta.textContent = '';
+  }
+
+  function renderFilas(lista) {
+    tbody.innerHTML = '';
+    for (const l of lista) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${l.titulo ?? ''}</td>
+        <td>${l.autor ?? ''}</td>
+        <td>${l.anio_publicacion ?? ''}</td>
+        <td>${l.categoria ?? ''}</td>
+        <td>${l.disponible ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-danger">No</span>'}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-primary" href="/api/paginas/libros/${l.id}/">Ver</a>
+        </td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function aplicarFiltro() {
+    const q = buscar.value.toLowerCase();
+    const filtrado = dataLibros.filter(l =>
+      (l.titulo || '').toLowerCase().includes(q) ||
+      (l.autor || '').toLowerCase().includes(q)
+    );
+    renderFilas(filtrado);
+  }
+
+  async function cargarLibros() {
+    limpiarAlert();
+    const token = localStorage.getItem('access');
+    if (!token) {
+      setAlert('warning', 'Falta token. Inicia sesión en /api/paginas/login/.');
+      return;
+    }
+    try {
+      const resp = await fetch('/api/libros/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.status === 401) {
+        setAlert('danger', 'Token inválido o expirado. Vuelve a iniciar sesión.');
+        return;
+      }
+      if (!resp.ok) {
+        setAlert('danger', 'Error al cargar libros.');
+        return;
+      }
+      dataLibros = await resp.json();
+      renderFilas(dataLibros);
+    } catch {
+      setAlert('danger', 'Error de red.');
+    }
+  }
+
+  buscar.addEventListener('input', aplicarFiltro);
+  btnRecargar.addEventListener('click', cargarLibros);
+  document.addEventListener('DOMContentLoaded', cargarLibros);
+</script>
+{% endblock %}
