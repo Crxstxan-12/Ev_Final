@@ -27,7 +27,9 @@
             { "listen": "test", "script": { "type": "text/javascript", "exec": [
               "const data = pm.response.json();",
               "pm.environment.set('accessToken', data.access);",
-              "pm.environment.set('refreshToken', data.refresh);"
+              "pm.environment.set('refreshToken', data.refresh);",
+              "pm.collectionVariables.set('accessToken', data.access);",
+              "pm.collectionVariables.set('refreshToken', data.refresh);"
             ] } }
           ]
         },
@@ -42,10 +44,38 @@
           "event": [
             { "listen": "test", "script": { "type": "text/javascript", "exec": [
               "const data = pm.response.json();",
-              "pm.environment.set('accessToken', data.access);"
+              "pm.environment.set('accessToken', data.access);",
+              "pm.collectionVariables.set('accessToken', data.access);"
             ] } }
           ]
         }
+      ]
+    },
+    {
+      "name": "Permisos",
+      "item": [
+        {
+          "name": "Asignar a grupo",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/usuarios/permisos/asignar/", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "permisos", "asignar", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"usuario\",\n  \"group\": \"EditoresLibros\"\n}" }
+          }
+        },
+        {
+          "name": "Mis permisos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/usuarios/permisos/mis/", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "permisos", "mis", ""] }
+          }
+        }
+      ],
+      "event": [
+        { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+          "const tok = pm.variables.get('accessToken');",
+          "if (tok) { pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + tok }); }"
+        ] } }
       ]
     },
     {
@@ -64,7 +94,7 @@
       "name": "Trabajadores API",
       "event": [
         { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
-          "const tok = pm.environment.get('accessToken');",
+          "const tok = pm.variables.get('accessToken');",
           "if (tok) { pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + tok }); }"
         ] } }
       ],

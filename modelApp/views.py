@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -9,7 +9,7 @@ from .models import Libro, Trabajador
 from .serializers import LibroSerializer, TrabajadorSerializer
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def lista_libros(request):
     if request.method == 'GET':
         q = request.GET.get('q', '').strip()
@@ -26,7 +26,7 @@ def lista_libros(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def detalle_libro(request, pk):
     try:
         libro = Libro.objects.get(pk=pk)
@@ -93,3 +93,32 @@ def pagina_libro_detalle(request, pk):
 
 def pagina_trabajadores(request):
     return render(request, 'modelApp/trabajadores_list.html')
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def asignar_grupo_usuario(request):
+    username = request.data.get('username')
+    group_name = request.data.get('group', 'EditoresLibros')
+    if not username:
+        return Response({'detail': 'username requerido'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({'detail': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    group, _ = Group.objects.get_or_create(name=group_name)
+    if group_name == 'EditoresLibros':
+        codenames = ['view_libro','add_libro','change_libro','delete_libro','view_trabajador']
+        perms = list(Permission.objects.filter(codename__in=codenames))
+        group.permissions.set(perms)
+    user.groups.add(group)
+    return Response({
+        'user': user.username,
+        'groups': list(user.groups.values_list('name', flat=True)),
+        'group_permissions': list(group.permissions.values_list('codename', flat=True)),
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_permisos(request):
+    perms = sorted(list(request.user.get_all_permissions()))
+    return Response({'permissions': perms})

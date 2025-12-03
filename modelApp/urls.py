@@ -8,6 +8,8 @@ from .views import (
     lista_trabajadores,
     detalle_trabajador,
     pagina_trabajadores,
+    asignar_grupo_usuario,
+    mis_permisos,
 )
 
 
@@ -16,6 +18,8 @@ urlpatterns = [
     path('libros/<int:pk>/', detalle_libro),
     path('trabajadores/', lista_trabajadores),
     path('trabajadores/<int:pk>/', detalle_trabajador),
+    path('usuarios/permisos/asignar/', asignar_grupo_usuario),
+    path('usuarios/permisos/mis/', mis_permisos),
     # Páginas HTML
     path('paginas/libros/', pagina_libros),
     path('paginas/libros/nuevo/', pagina_libro_form),
